@@ -5,17 +5,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".MainActivity">
+    tools:context=".CountriesActivity">
 
     <TextView
+        android:id="@+id/textViewRegionTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Regiones del Mundo"
-        android:textSize="24sp"
+        android:text="Países"
+        android:textSize="20sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="24dp" />
+        android:padding="16dp" />
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -25,7 +25,7 @@
         android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewRegions"
+        android:id="@+id/recyclerViewCountries"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible" />
@@ -34,7 +34,7 @@
         android:id="@+id/textViewError"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Error al cargar regiones"
+        android:text="Error al cargar países"
         android:textSize="16sp"
         android:gravity="center"
         android:visibility="gone"

@@ -8,7 +8,10 @@ android {
     compileSdk {
         version = release(36)
     }
-
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
     defaultConfig {
         applicationId = "com.example.agenciadeviajes"
         minSdk = 24
@@ -17,6 +20,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "WEATHER_API_KEY", "\"27f50ce08d404dac97124129253010\"")
+
     }
 
     buildTypes {
@@ -46,4 +51,20 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // Glide para imágenes
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    // Lifecycle
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
+
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }
