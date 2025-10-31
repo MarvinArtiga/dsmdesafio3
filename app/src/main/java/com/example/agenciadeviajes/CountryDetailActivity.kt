@@ -1,10 +1,12 @@
 package com.example.agenciadeviajes
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.bumptech.glide.Glide
@@ -43,10 +45,31 @@ class CountryDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_country_detail)
 
-        country = intent.getSerializableExtra("COUNTRY") as Country
-        initViews()
-        loadCountryDetails()
-        loadWeather()
+        Log.d("CountryDetail", "✅ Actividad creada")
+
+        try {
+            // Verificar que tenemos el extra
+            if (!intent.hasExtra("COUNTRY")) {
+                Log.e("CountryDetail", "❌ No hay datos del país")
+                Toast.makeText(this, "Error: No hay datos del país", Toast.LENGTH_LONG).show()
+                finish()
+                return
+            }
+
+            country = intent.getSerializableExtra("COUNTRY") as Country
+            Log.d("CountryDetail", "✅ País recibido: ${country.name.common}")
+            Log.d("CountryDetail", "✅ Capital: ${country.capital?.firstOrNull()}")
+
+            initViews()
+            loadCountryDetails()
+            loadWeather()
+
+        } catch (e: Exception) {
+            Log.e("CountryDetail", "❌ ERROR CRÍTICO: ${e.message}")
+            e.printStackTrace()
+            Toast.makeText(this, "Error crítico: ${e.message}", Toast.LENGTH_LONG).show()
+            finish()
+        }
     }
 
     private fun initViews() {
@@ -70,57 +93,89 @@ class CountryDetailActivity : AppCompatActivity() {
     }
 
     private fun loadCountryDetails() {
-        // Cargar bandera
-        Glide.with(this)
-            .load(country.flags.png)
-            .placeholder(R.drawable.ic_launcher_foreground)
-            .error(R.drawable.ic_launcher_foreground)
-            .into(imageViewFlag)
+        Log.d("CountryDetail", "🔄 Cargando detalles del país...")
 
-        // Información del país
-        textViewCountryName.text = "${country.name.common} (${country.name.official})"
-        textViewCapital.text = "Capital: ${country.capital?.firstOrNull() ?: "No disponible"}"
-        textViewRegion.text = "Región: ${country.region} - ${country.subregion ?: ""}"
-        textViewPopulation.text = "Población: ${formatPopulation(country.population)}"
+        try {
+            // Cargar bandera
+            Glide.with(this)
+                .load(country.flags.png)
+                .placeholder(R.drawable.ic_launcher_foreground)
+                .error(R.drawable.ic_launcher_foreground)
+                .into(imageViewFlag)
 
-        // Idiomas
-        val languages = country.languages?.values?.joinToString(", ") ?: "No disponible"
-        textViewLanguages.text = "Idiomas: $languages"
+            // Información del país
+            textViewCountryName.text = "${country.name.common} (${country.name.official})"
+            textViewCapital.text = "Capital: ${country.capital?.firstOrNull() ?: "No disponible"}"
+            textViewRegion.text = "Región: ${country.region} - ${country.subregion ?: ""}"
+            textViewPopulation.text = "Población: ${formatPopulation(country.population)}"
 
-        // Monedas
-        val currencies = country.currencies?.values?.joinToString(", ") {
-            "${it.name} (${it.symbol ?: ""})"
-        } ?: "No disponible"
-        textViewCurrencies.text = "Monedas: $currencies"
+            // Idiomas
+            val languages = country.languages?.values?.joinToString(", ") ?: "No disponible"
+            textViewLanguages.text = "Idiomas: $languages"
+
+            // Monedas
+            val currencies = country.currencies?.values?.joinToString(", ") {
+                "${it.name} (${it.symbol ?: ""})"
+            } ?: "No disponible"
+            textViewCurrencies.text = "Monedas: $currencies"
+
+            Log.d("CountryDetail", "✅ Detalles cargados exitosamente")
+        } catch (e: Exception) {
+            Log.e("CountryDetail", "❌ Error en loadCountryDetails: ${e.message}")
+            e.printStackTrace()
+            Toast.makeText(this, "Error cargando datos del país", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun loadWeather() {
         val capital = country.capital?.firstOrNull()
         if (capital.isNullOrEmpty()) {
-            showWeatherError("No hay información de capital para obtener el clima")
+            Log.e("CountryDetail", "❌ No hay capital disponible")
+            textViewWeatherError.text = "No hay información de capital"
+            textViewWeatherError.visibility = View.VISIBLE
+            cardViewWeather.visibility = View.GONE
+            progressBarWeather.visibility = View.GONE
             return
         }
 
-        showWeatherLoading(true)
+        Log.d("CountryDetail", "🌤️ Solicitando clima para: $capital")
+
+        // Mostrar loading
+        progressBarWeather.visibility = View.VISIBLE
+        cardViewWeather.visibility = View.GONE
+        textViewWeatherError.visibility = View.GONE
 
         CoroutineScope(Dispatchers.IO).launch {
-            val result = countryController.getWeatherByCapital(capital)
+            try {
+                val result = countryController.getWeatherByCapital(capital)
 
-            withContext(Dispatchers.Main) {
-                showWeatherLoading(false)
+                withContext(Dispatchers.Main) {
+                    // Ocultar loading
+                    progressBarWeather.visibility = View.GONE
 
-                when {
-                    result.isSuccess -> {
-                        val weather = result.getOrNull()
-                        if (weather != null) {
-                            showWeatherInfo(weather)
-                        } else {
-                            showWeatherError("No se pudo obtener información del clima")
+                    when {
+                        result.isSuccess -> {
+                            val weather = result.getOrNull()
+                            if (weather != null) {
+                                Log.d("CountryDetail", "✅ Clima recibido: ${weather.current.tempC}°C")
+                                showWeatherInfo(weather)
+                            } else {
+                                Log.e("CountryDetail", "❌ Clima nulo")
+                                showWeatherError("No se pudo obtener información del clima")
+                            }
+                        }
+                        else -> {
+                            val error = result.exceptionOrNull()?.message ?: "Error desconocido"
+                            Log.e("CountryDetail", "❌ Error clima: $error")
+                            showWeatherError("Error: $error")
                         }
                     }
-                    else -> {
-                        showWeatherError("Error del clima: ${result.exceptionOrNull()?.message}")
-                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    progressBarWeather.visibility = View.GONE
+                    Log.e("CountryDetail", "💥 Excepción en clima: ${e.message}")
+                    showWeatherError("Error de conexión: ${e.message}")
                 }
             }
         }
@@ -138,19 +193,10 @@ class CountryDetailActivity : AppCompatActivity() {
         textViewFeelsLike.text = "Sensación térmica: ${weather.current.feelsLikeC}°C"
     }
 
-    private fun showWeatherLoading(show: Boolean) {
-        progressBarWeather.visibility = if (show) View.VISIBLE else View.GONE
-        if (show) {
-            cardViewWeather.visibility = View.GONE
-            textViewWeatherError.visibility = View.GONE
-        }
-    }
-
     private fun showWeatherError(message: String) {
         textViewWeatherError.text = message
         textViewWeatherError.visibility = View.VISIBLE
         cardViewWeather.visibility = View.GONE
-        progressBarWeather.visibility = View.GONE
     }
 
     private fun formatPopulation(population: Int): String {
