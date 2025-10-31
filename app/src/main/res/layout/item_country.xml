@@ -42,6 +42,6 @@
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:src="@android:drawable/ic_media_next"
-        android:tint="@color/black" />
+        app:tint="@color/black" />
 
 </LinearLayout>

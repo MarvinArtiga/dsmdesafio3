@@ -3,7 +3,11 @@ package com.example.agenciadeviajes
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -38,6 +42,11 @@ class CountryDetailActivity : AppCompatActivity() {
     private lateinit var progressBarWeather: ProgressBar
     private lateinit var textViewWeatherError: TextView
 
+    // Nuevas variables para la búsqueda y icono de clima
+    private lateinit var searchEditText: EditText
+    private lateinit var searchErrorLayout: LinearLayout
+    private lateinit var weatherIconImageView: ImageView
+
     private val countryController = CountryController()
     private lateinit var country: Country
 
@@ -61,6 +70,7 @@ class CountryDetailActivity : AppCompatActivity() {
             Log.d("CountryDetail", "✅ Capital: ${country.capital?.firstOrNull()}")
 
             initViews()
+            initSearch() // <- AGREGAR ESTA LINEA
             loadCountryDetails()
             loadWeather()
 
@@ -90,6 +100,36 @@ class CountryDetailActivity : AppCompatActivity() {
         textViewFeelsLike = findViewById(R.id.textViewFeelsLike)
         progressBarWeather = findViewById(R.id.progressBarWeather)
         textViewWeatherError = findViewById(R.id.textViewWeatherError)
+
+        // Nuevas vistas del diseño
+        weatherIconImageView = findViewById(R.id.weatherIconImageView)
+    }
+
+    private fun initSearch() {
+        searchEditText = findViewById(R.id.searchEditText)
+        searchErrorLayout = findViewById(R.id.searchErrorLayout)
+
+        searchEditText.setOnEditorActionListener { v, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                val query = searchEditText.text.toString().trim()
+                if (query.isNotEmpty()) {
+                    // Simulación de búsqueda - aquí integrarías tu lógica real
+                    if (query.equals(country.name.common, ignoreCase = true)) {
+                        searchErrorLayout.visibility = View.GONE
+                        Toast.makeText(this, "Mostrando información de $query", Toast.LENGTH_SHORT).show()
+                    } else {
+                        searchErrorLayout.visibility = View.VISIBLE
+                    }
+
+                    // Ocultar teclado
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.hideSoftInputFromWindow(searchEditText.windowToken, 0)
+                }
+                true
+            } else {
+                false
+            }
+        }
     }
 
     private fun loadCountryDetails() {
@@ -188,9 +228,20 @@ class CountryDetailActivity : AppCompatActivity() {
         textViewWeatherLocation.text = "${weather.location.name}, ${weather.location.country}"
         textViewTemperature.text = "${weather.current.tempC}°C"
         textViewCondition.text = weather.current.condition.text
-        textViewWind.text = "Viento: ${weather.current.windKph} kph"
-        textViewHumidity.text = "Humedad: ${weather.current.humidity}%"
-        textViewFeelsLike.text = "Sensación térmica: ${weather.current.feelsLikeC}°C"
+        textViewWind.text = "${weather.current.windKph} kph"
+        textViewHumidity.text = "${weather.current.humidity}%"
+        textViewFeelsLike.text = "${weather.current.feelsLikeC}°C"
+
+        // Cambiar icono según condición climática
+        val condition = weather.current.condition.text.toLowerCase()
+        weatherIconImageView.setImageResource(
+            when {
+                condition.contains("rain") || condition.contains("lluvia") -> R.drawable.ic_weather_rainy
+                condition.contains("sun") || condition.contains("soleado") -> R.drawable.ic_weather_sunny
+                condition.contains("cloud") || condition.contains("nublado") -> R.drawable.ic_weather_cloudy
+                else -> R.drawable.ic_weather_sunny
+            }
+        )
     }
 
     private fun showWeatherError(message: String) {
